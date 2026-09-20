@@ -1,0 +1,81 @@
+import type { Category } from '../types'
+
+export const CATEGORIES: Category[] = [
+  {
+    id: 'cat-hamburguesas',
+    name: 'Hamburguesas',
+    slug: 'hamburguesas',
+    icon: 'Beef',
+    description: 'Hamburguesas artesanales, smash y clásicas al plato o al pan',
+  },
+  {
+    id: 'cat-pizzas',
+    name: 'Pizzas',
+    slug: 'pizzas',
+    icon: 'Pizza',
+    description: 'Pizzas al horno, muzza, calzones y fugazzetas',
+  },
+  {
+    id: 'cat-chivitos',
+    name: 'Chivitos',
+    slug: 'chivitos',
+    icon: 'Utensils',
+    description: 'El clásico chivito uruguayo al pan o al plato con papas fritas',
+  },
+  {
+    id: 'cat-parrilla',
+    name: 'Parrilla',
+    slug: 'parrilla',
+    icon: 'Flame',
+    description: 'Cortes tradicionales, asado, achuras y minutas a las brasas',
+  },
+  {
+    id: 'cat-comida-rapida',
+    name: 'Comida rápida',
+    slug: 'comida-rapida',
+    icon: 'Zap',
+    description: 'Minutas, snacks, papas con cheddar y preparaciones al paso',
+  },
+  {
+    id: 'cat-rotiseria',
+    name: 'Rotisería',
+    slug: 'rotiseria',
+    icon: 'ShoppingBag',
+    description: 'Comidas elaboradas listas para llevar, tartas y empanadas',
+  },
+  {
+    id: 'cat-restaurante',
+    name: 'Restaurante',
+    slug: 'restaurante',
+    icon: 'UtensilsCrossed',
+    description: 'Platos a la carta, pastas caseras, carnes y pescados',
+  },
+  {
+    id: 'cat-cafeteria',
+    name: 'Cafetería',
+    slug: 'cafeteria',
+    icon: 'Coffee',
+    description: 'Cafés de especialidad, infusiones, repostería y meriendas',
+  },
+  {
+    id: 'cat-heladeria',
+    name: 'Heladería',
+    slug: 'heladeria',
+    icon: 'IceCreamCone',
+    description: 'Helados artesanales, paletas, postres helados y cucuruchos',
+  },
+  {
+    id: 'cat-panaderia',
+    name: 'Panadería',
+    slug: 'panaderia',
+    icon: 'Croissant',
+    description: 'Bizcochos, panes artesanales, sandwiches y confitería',
+  },
+  {
+    id: 'cat-comida-casera',
+    name: 'Comida casera',
+    slug: 'comida-casera',
+    icon: 'CookingPot',
+    description: 'Menús ejecutivos diarios, guisados, milanesas y sabor tradicional',
+  },
+]
