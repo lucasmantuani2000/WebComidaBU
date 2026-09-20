@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import type { Business } from '../types'
+import { useState, useMemo } from 'react'
+import type { Business, Review } from '../types'
 import {
   ArrowLeft,
   MessageCircle,
@@ -19,7 +19,12 @@ import {
   Flag,
   Share2,
   Check,
+  PenSquare,
+  Plus,
+  X,
 } from 'lucide-react'
+import { MOCK_REVIEWS } from '../data'
+import { ReviewCard } from '../components/common'
 
 export interface BusinessDetailProps {
   business: Business | null | undefined
@@ -29,6 +34,29 @@ export interface BusinessDetailProps {
 export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
   const [imgError, setImgError] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [reviewsList, setReviewsList] = useState<Review[]>(MOCK_REVIEWS)
+
+  // Estado del modal de nueva reseña desde el detalle
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
+  const [formProduct, setFormProduct] = useState('')
+  const [formRating, setFormRating] = useState(5)
+  const [formHoverRating, setFormHoverRating] = useState(0)
+  const [formUserName, setFormUserName] = useState('')
+  const [formComment, setFormComment] = useState('')
+  const [showToast, setShowToast] = useState(false)
+
+  // Reseñas asociadas a este negocio específico
+  const businessReviews = useMemo(() => {
+    if (!business) return []
+    return reviewsList.filter((r) => r.businessId === business.id)
+  }, [reviewsList, business])
+
+  // Puntuación media calculada en base a las opiniones reales
+  const computedRating = useMemo(() => {
+    if (businessReviews.length === 0) return business?.rating || 0
+    const sum = businessReviews.reduce((acc, r) => acc + r.rating, 0)
+    return parseFloat((sum / businessReviews.length).toFixed(1))
+  }, [businessReviews, business?.rating])
 
   // Manejo de estado si el negocio no existe
   if (!business) {
@@ -86,8 +114,47 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
     }
   }
 
+  // Enviar reseña directamente desde la ficha
+  const handleSubmitDetailReview = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formProduct.trim() || !formUserName.trim() || !formComment.trim()) return
+
+    const newRev: Review = {
+      id: `rev-${Date.now()}`,
+      businessId: business.id,
+      businessName: business.name,
+      userName: formUserName.trim(),
+      productConsumed: formProduct.trim(),
+      rating: formRating,
+      comment: formComment.trim(),
+      date: 'Recién',
+      verifiedVisit: true,
+    }
+
+    setReviewsList([newRev, ...reviewsList])
+    setFormProduct('')
+    setFormUserName('')
+    setFormComment('')
+    setFormRating(5)
+    setIsReviewModalOpen(false)
+
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 4500)
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-6 animate-in fade-in duration-300">
+      {/* Toast de confirmación */}
+      {showToast && (
+        <div className="fixed top-20 right-4 sm:right-8 z-50 max-w-sm bg-emerald-600 text-white px-4 py-3 rounded-2xl shadow-xl border border-emerald-500 flex items-center gap-3 animate-in slide-in-from-top duration-300">
+          <CheckCircle2 className="w-5 h-5 shrink-0" />
+          <div className="text-xs">
+            <span className="font-bold block text-sm">¡Opinión publicada!</span>
+            Tu reseña sobre {business.name} se ha sumado a la comunidad.
+          </div>
+        </div>
+      )}
+
       {/* Barra de navegación superior con botón Volver */}
       <div className="flex items-center justify-between">
         <button
@@ -230,7 +297,7 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
 
       {/* Grilla con Información Detallada y Servicios */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Columna Principal (2 columnas): Qué ofrece + Horarios */}
+        {/* Columna Principal (2 columnas): Qué ofrece + Horarios + Reseñas Reales */}
         <div className="md:col-span-2 space-y-6">
           {/* Especialidades y Platos (Offering) */}
           <section className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
@@ -385,22 +452,27 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
             )}
           </section>
 
-          {/* Sección de Reseñas y Puntuaciones (Esqueleto UI) */}
+          {/* Sección de Reseñas Reales Conectadas */}
           <section className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
                 <h2 className="text-slate-900 font-bold text-base">Opiniones de la comunidad</h2>
               </div>
-              <span className="text-xs text-slate-500 font-medium">
-                {business.reviewCount > 0 ? `${business.reviewCount} opiniones` : 'Sin opiniones aún'}
-              </span>
+              <button
+                type="button"
+                onClick={() => setIsReviewModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-xs transition cursor-pointer"
+              >
+                <PenSquare className="w-3.5 h-3.5 text-amber-600" />
+                <span>Escribir opinión</span>
+              </button>
             </div>
 
             {/* Cabecera de puntuación */}
             <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
               <div className="text-3xl font-black text-slate-900">
-                {business.rating > 0 ? business.rating.toFixed(1) : 'Nuevo'}
+                {computedRating > 0 ? computedRating.toFixed(1) : 'Nuevo'}
               </div>
               <div>
                 <div className="flex items-center gap-1 text-amber-500">
@@ -408,7 +480,7 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
                     <Star
                       key={i}
                       className={`w-4 h-4 ${
-                        i < Math.floor(business.rating || 5)
+                        i < Math.floor(computedRating || 5)
                           ? 'fill-amber-400 text-amber-400'
                           : 'text-slate-300'
                       }`}
@@ -416,36 +488,42 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
                   ))}
                 </div>
                 <div className="text-xs text-slate-500 mt-0.5">
-                  Valoración de vecinos y visitantes de Bella Unión
+                  {businessReviews.length > 0
+                    ? `${businessReviews.length} ${businessReviews.length === 1 ? 'opinión verificada' : 'opiniones verificadas'} de comensales`
+                    : 'Aún no cuenta con opiniones registradas'}
                 </div>
               </div>
             </div>
 
-            {/* Estado vacío o reseñas representativas */}
-            <div className="space-y-3">
-              <div className="p-4 rounded-xl border border-slate-100 bg-white space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-800">Vecino de Bella Unión</span>
-                  <span className="text-slate-400">Hace unos días</span>
+            {/* Listado de Reseñas de este Comercio */}
+            <div className="space-y-3 pt-1">
+              {businessReviews.length > 0 ? (
+                businessReviews.map((rev) => (
+                  <ReviewCard key={rev.id} review={rev} showBusinessName={false} />
+                ))
+              ) : (
+                <div className="p-6 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">
+                    <Star className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800">
+                      Sé el primero en dejar una opinión sobre {business.name}
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto mt-0.5">
+                      Contale a tus vecinos qué plato probaste y qué tal estuvo la atención.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsReviewModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Dejar una opinión</span>
+                  </button>
                 </div>
-                <div className="flex items-center gap-1 text-amber-500">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Excelente propuesta gastronómica local. Rápida respuesta para los pedidos y muy buena calidad en las porciones.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-2">
-                <p className="text-xs text-slate-600 font-medium">
-                  ¿Probaste la comida de {business.name}?
-                </p>
-                <div className="inline-flex items-center gap-1 text-[11px] text-slate-400">
-                  <span>Las opiniones verificadas requieren iniciar sesión (próximamente)</span>
-                </div>
-              </div>
+              )}
             </div>
           </section>
         </div>
@@ -507,6 +585,121 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
           </div>
         </div>
       </div>
+
+      {/* Modal de Nueva Reseña desde el Detalle */}
+      {isReviewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-base text-slate-900">
+                  Opinión sobre {business.name}
+                </h3>
+                <p className="text-xs text-slate-500">Compartí qué consumiste y tu experiencia</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsReviewModalOpen(false)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitDetailReview} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label htmlFor="detail-product-input" className="font-bold text-slate-700 block">
+                  ¿Qué consumiste o pediste? <span className="text-amber-600 font-semibold">(Plato específico)</span>
+                </label>
+                <input
+                  id="detail-product-input"
+                  type="text"
+                  value={formProduct}
+                  onChange={(e) => setFormProduct(e.target.value)}
+                  placeholder="Ej: Pizza de cuatro quesos, Chivito completo..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="font-bold text-slate-700 block">Calificación:</span>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setFormRating(star)}
+                      onMouseEnter={() => setFormHoverRating(star)}
+                      onMouseLeave={() => setFormHoverRating(0)}
+                      className="p-1 hover:scale-115 transition-transform cursor-pointer focus:outline-none"
+                    >
+                      <Star
+                        className={`w-6 h-6 ${
+                          star <= (formHoverRating || formRating)
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-slate-300'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                  <span className="font-bold text-amber-800 text-sm ml-2">
+                    {formHoverRating || formRating} de 5 estrellas
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="detail-user-input" className="font-bold text-slate-700 block">
+                  Tu nombre:
+                </label>
+                <input
+                  id="detail-user-input"
+                  type="text"
+                  value={formUserName}
+                  onChange={(e) => setFormUserName(e.target.value)}
+                  placeholder="Ej: Laura Martínez"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="detail-comment-input" className="font-bold text-slate-700 block">
+                  Tu comentario:
+                </label>
+                <textarea
+                  id="detail-comment-input"
+                  rows={3}
+                  value={formComment}
+                  onChange={(e) => setFormComment(e.target.value)}
+                  placeholder="Contanos sobre la comida, la atención y el tiempo de espera..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400"
+                  required
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsReviewModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold cursor-pointer shadow-xs"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Publicar</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
