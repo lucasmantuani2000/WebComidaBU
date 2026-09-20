@@ -11,13 +11,15 @@ import {
   ShoppingBag,
   UtensilsCrossed,
   MessageCircle,
+  ChevronRight,
 } from 'lucide-react'
 
 interface BusinessCardProps {
   business: Business
+  onSelect?: (business: Business) => void
 }
 
-export function BusinessCard({ business }: BusinessCardProps) {
+export function BusinessCard({ business, onSelect }: BusinessCardProps) {
   const [imgError, setImgError] = useState(false)
 
   // Normalización del número de WhatsApp uruguayo para enlace wa.me
@@ -34,8 +36,24 @@ export function BusinessCard({ business }: BusinessCardProps) {
     return `https://wa.me/${formatted}?text=${greeting}`
   }
 
+  const handleCardClick = () => {
+    onSelect?.(business)
+  }
+
   return (
-    <article className="group flex flex-col bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-lg hover:shadow-amber-500/5 hover:border-amber-300 transition-all duration-300 hover:scale-[1.01]">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={handleCardClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          handleCardClick()
+        }
+      }}
+      aria-label={`Ver ficha completa de ${business.name}`}
+      className="group flex flex-col bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-lg hover:shadow-amber-500/10 hover:border-amber-400/80 transition-all duration-300 hover:scale-[1.01] cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+    >
       {/* Portada / Media */}
       <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
         {!imgError && business.coverImage ? (
@@ -54,7 +72,7 @@ export function BusinessCard({ business }: BusinessCardProps) {
         )}
 
         {/* Gradiente de superposición sutil */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-black/20 pointer-events-none" />
 
         {/* Badge de verificación superior izquierdo */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5">
@@ -106,16 +124,23 @@ export function BusinessCard({ business }: BusinessCardProps) {
       {/* Contenido / Información */}
       <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between space-y-3">
         <div className="space-y-2">
-          {/* Categorías */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {business.categories.map((cat) => (
-              <span
-                key={cat}
-                className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200/60"
-              >
-                {cat}
-              </span>
-            ))}
+          {/* Categorías y CTA sutil */}
+          <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {business.categories.map((cat) => (
+                <span
+                  key={cat}
+                  className="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-amber-50 text-amber-800 border border-amber-200/60"
+                >
+                  {cat}
+                </span>
+              ))}
+            </div>
+
+            <span className="text-[11px] font-semibold text-amber-600 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span>Ver ficha</span>
+              <ChevronRight className="w-3 h-3" />
+            </span>
           </div>
 
           {/* Nombre y descripción */}
@@ -138,7 +163,7 @@ export function BusinessCard({ business }: BusinessCardProps) {
               {business.offering.map((dish) => (
                 <span
                   key={dish}
-                  className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700 hover:bg-amber-100/70 hover:text-amber-900 transition-colors"
+                  className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700 group-hover:bg-amber-100/70 group-hover:text-amber-900 transition-colors"
                 >
                   {dish}
                 </span>
@@ -157,13 +182,14 @@ export function BusinessCard({ business }: BusinessCardProps) {
           )}
 
           <div className="flex items-center gap-2 pt-0.5">
-            {/* Botón WhatsApp prioritario si existe */}
+            {/* Botón WhatsApp prioritario si existe (con stopPropagation) */}
             {business.contact.whatsapp ? (
               <a
                 href={getWhatsAppUrl(business.contact.whatsapp)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-xs transition shadow-xs"
+                onClick={(e) => e.stopPropagation()}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-semibold text-xs transition shadow-xs cursor-pointer"
                 aria-label={`Pedir por WhatsApp a ${business.name}`}
               >
                 <MessageCircle className="w-4 h-4 fill-white shrink-0" />
@@ -172,7 +198,8 @@ export function BusinessCard({ business }: BusinessCardProps) {
             ) : business.contact.phone ? (
               <a
                 href={`tel:${business.contact.phone}`}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-semibold text-xs transition shadow-xs"
+                onClick={(e) => e.stopPropagation()}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-semibold text-xs transition shadow-xs cursor-pointer"
                 aria-label={`Llamar a ${business.name}`}
               >
                 <Phone className="w-3.5 h-3.5 shrink-0" />
@@ -184,13 +211,14 @@ export function BusinessCard({ business }: BusinessCardProps) {
               </div>
             )}
 
-            {/* Enlace Instagram si existe */}
+            {/* Enlace Instagram si existe (con stopPropagation) */}
             {business.contact.instagram && (
               <a
                 href={`https://instagram.com/${business.contact.instagram}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-pink-600 hover:border-pink-300 hover:bg-pink-50 transition active:scale-95 shrink-0"
+                onClick={(e) => e.stopPropagation()}
+                className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:text-pink-600 hover:border-pink-300 hover:bg-pink-50 transition active:scale-95 shrink-0 cursor-pointer"
                 aria-label={`Instagram de ${business.name}`}
                 title={`@${business.contact.instagram}`}
               >

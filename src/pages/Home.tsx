@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import type { Business } from '../types'
 import {
   Search,
   X,
@@ -20,6 +21,7 @@ import {
 import { CATEGORIES, MOCK_BUSINESSES } from '../data'
 import { BusinessCard } from '../components/common'
 import { normalizeText } from '../utils'
+import { BusinessDetail } from './BusinessDetail'
 
 const CATEGORY_ICONS: Record<string, typeof UtensilsCrossed> = {
   Beef,
@@ -35,9 +37,32 @@ const CATEGORY_ICONS: Record<string, typeof UtensilsCrossed> = {
   CookingPot,
 }
 
-export function Home() {
+interface HomeProps {
+  selectedBusinessId?: string | null
+  onSelectBusiness?: (id: string | null) => void
+}
+
+export function Home({
+  selectedBusinessId: propSelectedId,
+  onSelectBusiness: propOnSelect,
+}: HomeProps = {}) {
+  const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('todos')
+
+  // Soporta control de estado interno o externo vía props
+  const selectedBusinessId = propSelectedId !== undefined ? propSelectedId : internalSelectedId
+  const setSelectedBusinessId = propOnSelect || setInternalSelectedId
+
+  // Comercio actualmente seleccionado para la vista de detalle
+  const selectedBusiness = useMemo(() => {
+    if (!selectedBusinessId) return null
+    return (
+      MOCK_BUSINESSES.find(
+        (b) => b.id === selectedBusinessId || b.slug === selectedBusinessId
+      ) || null
+    )
+  }, [selectedBusinessId])
 
   // Filtrado reactivo en tiempo real con normalización de tildes y mayúsculas
   const filteredBusinesses = useMemo(() => {
@@ -80,10 +105,25 @@ export function Home() {
     setSelectedCategory('todos')
   }
 
+  const handleSelect = (business: Business) => {
+    setSelectedBusinessId(business.id)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleBack = () => {
+    setSelectedBusinessId(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const isFiltering = searchQuery.trim() !== '' || selectedCategory !== 'todos'
 
+  // Si hay un comercio seleccionado, mostramos la Ficha de Detalle completa
+  if (selectedBusinessId) {
+    return <BusinessDetail business={selectedBusiness} onBack={handleBack} />
+  }
+
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200">
       {/* Hero Section */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 p-6 sm:p-10 text-white shadow-xl shadow-amber-500/15">
         <div className="relative z-10 max-w-2xl space-y-3">
@@ -251,7 +291,7 @@ export function Home() {
         {filteredBusinesses.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
             {filteredBusinesses.map((business) => (
-              <BusinessCard key={business.id} business={business} />
+              <BusinessCard key={business.id} business={business} onSelect={handleSelect} />
             ))}
           </div>
         ) : (
