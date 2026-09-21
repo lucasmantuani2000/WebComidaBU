@@ -3,8 +3,10 @@ import type { Review } from '../types'
 
 export interface ReviewsContextType {
   reviews: Review[]
-  addReview: (reviewData: Omit<Review, 'id' | 'date'>) => Review
+  isLoading?: boolean
+  addReview: (reviewData: Omit<Review, 'id' | 'date'>) => Promise<Review> | Review
   getReviewsByBusiness: (businessId: string) => Review[]
+  reloadReviews?: () => Promise<void>
 }
 
 export const ReviewsContext = createContext<ReviewsContextType | undefined>(undefined)

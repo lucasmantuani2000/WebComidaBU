@@ -11,11 +11,12 @@ import {
   PenSquare,
   Sparkles,
 } from 'lucide-react'
-import { MOCK_BUSINESSES } from '../data'
 import { ReviewCard, AuthModal } from '../components/common'
-import { useAuth, useReviews } from '../context'
+
+import { useAuth, useReviews, useBusinesses } from '../context'
 import { normalizeText } from '../utils'
 import { BusinessDetail } from './BusinessDetail'
+
 
 interface ReviewsViewProps {
   selectedBusinessId?: string | null
@@ -28,6 +29,7 @@ export function ReviewsView({
 }: ReviewsViewProps = {}) {
   const { currentUser, isAuthenticated } = useAuth()
   const { reviews, addReview } = useReviews()
+  const { businesses } = useBusinesses()
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [starFilter, setStarFilter] = useState<number | 'all'>('all')
@@ -37,7 +39,8 @@ export function ReviewsView({
 
   // Estado del Modal de Nueva Reseña
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [formBusinessId, setFormBusinessId] = useState(MOCK_BUSINESSES[0]?.id || '')
+  const [formBusinessId, setFormBusinessId] = useState(businesses[0]?.id || '')
+
   const [formProduct, setFormProduct] = useState('')
   const [formRating, setFormRating] = useState(5)
   const [formHoverRating, setFormHoverRating] = useState(0)
@@ -52,11 +55,12 @@ export function ReviewsView({
   const selectedBusiness = useMemo(() => {
     if (!selectedBusinessId) return null
     return (
-      MOCK_BUSINESSES.find(
+      businesses.find(
         (b) => b.id === selectedBusinessId || b.slug === selectedBusinessId
       ) || null
     )
-  }, [selectedBusinessId])
+  }, [selectedBusinessId, businesses])
+
 
   // Filtrado reactivo en tiempo real con normalizador de texto
   const filteredReviews = useMemo(() => {
@@ -118,7 +122,8 @@ export function ReviewsView({
       return
     }
 
-    const business = MOCK_BUSINESSES.find((b) => b.id === formBusinessId)
+    const business = businesses.find((b) => b.id === formBusinessId)
+
     addReview({
       businessId: formBusinessId,
       businessName: business?.name || 'Local de Bella Unión',
@@ -385,11 +390,12 @@ export function ReviewsView({
                   className="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 cursor-pointer"
                   required
                 >
-                  {MOCK_BUSINESSES.map((b) => (
+                  {businesses.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name} ({b.location.address})
                     </option>
                   ))}
+
                 </select>
               </div>
 

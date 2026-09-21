@@ -13,10 +13,13 @@ import {
   RotateCcw,
   UtensilsCrossed,
 } from 'lucide-react'
-import { CATEGORIES, MOCK_BUSINESSES } from '../data'
+import { CATEGORIES } from '../data'
 import { BusinessCard } from '../components/common'
+import { useBusinesses } from '../context'
 import { normalizeText } from '../utils'
 import { BusinessDetail } from './BusinessDetail'
+
+
 
 type SortOption = 'destacados' | 'nombre-asc' | 'nombre-desc' | 'rating-desc' | 'reviews-desc'
 
@@ -29,6 +32,7 @@ export function Explore({
   selectedBusinessId: propSelectedId,
   onSelectBusiness: propOnSelect,
 }: ExploreProps = {}) {
+  const { businesses } = useBusinesses()
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('todos')
@@ -46,18 +50,19 @@ export function Explore({
   const selectedBusiness = useMemo(() => {
     if (!selectedBusinessId) return null
     return (
-      MOCK_BUSINESSES.find(
+      businesses.find(
         (b) => b.id === selectedBusinessId || b.slug === selectedBusinessId
       ) || null
     )
-  }, [selectedBusinessId])
+  }, [selectedBusinessId, businesses])
 
   // Filtrado y ordenamiento combinado en tiempo real
   const filteredAndSortedBusinesses = useMemo(() => {
     const normQuery = normalizeText(searchQuery)
 
     // 1. Filtrado
-    const filtered = MOCK_BUSINESSES.filter((business) => {
+    const filtered = businesses.filter((business) => {
+
       // Filtro por categoría seleccionada
       if (selectedCategory !== 'todos') {
         if (!business.categories.includes(selectedCategory)) {
@@ -117,7 +122,9 @@ export function Explore({
     filterDineIn,
     filterVerifiedOnly,
     sortBy,
+    businesses,
   ])
+
 
   // Contabilizador de filtros activos
   const activeFilterCount = useMemo(() => {
@@ -236,15 +243,16 @@ export function Explore({
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 transition cursor-pointer"
             >
-              <option value="todos">Todas las categorías ({MOCK_BUSINESSES.length})</option>
+              <option value="todos">Todas las categorías ({businesses.length})</option>
               {CATEGORIES.map((cat) => {
-                const count = MOCK_BUSINESSES.filter((b) => b.categories.includes(cat.slug)).length
+                const count = businesses.filter((b) => b.categories.includes(cat.slug)).length
                 return (
                   <option key={cat.id} value={cat.slug}>
                     {cat.name} ({count})
                   </option>
                 )
               })}
+
             </select>
           </div>
 

@@ -17,11 +17,12 @@ import {
   LogIn,
   UserPlus,
 } from 'lucide-react'
-import { useAuth, useReviews, useFavorites } from '../context'
+import { useAuth, useReviews, useFavorites, useBusinesses } from '../context'
 import { ReviewCard, BusinessCard, AuthModal } from '../components/common'
 import { normalizeText } from '../utils'
 import { BusinessDetail } from './BusinessDetail'
-import { MOCK_BUSINESSES } from '../data'
+
+
 
 export interface ProfileViewProps {
   onNavigateToTab?: (tab: TabType) => void
@@ -32,6 +33,7 @@ export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBus
   const { currentUser, isAuthenticated, logout, loginAsDemoUser } = useAuth()
   const { reviews } = useReviews()
   const { favorites, favoritesCount } = useFavorites()
+  const { businesses } = useBusinesses()
 
   // Pestaña activa dentro del perfil: 'resenas' | 'favoritos'
   const [activeProfileTab, setActiveProfileTab] = useState<'resenas' | 'favoritos'>('resenas')
@@ -58,11 +60,11 @@ export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBus
   const selectedBusiness = useMemo(() => {
     if (!selectedBusinessId) return null
     return (
-      MOCK_BUSINESSES.find(
+      businesses.find(
         (b) => b.id === selectedBusinessId || b.slug === selectedBusinessId
       ) || null
     )
-  }, [selectedBusinessId])
+  }, [selectedBusinessId, businesses])
 
   // Reseñas del usuario actual
   const userReviews = useMemo(() => {
@@ -76,8 +78,9 @@ export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBus
 
   // Comercios marcados como favoritos
   const favoriteBusinesses = useMemo(() => {
-    return MOCK_BUSINESSES.filter((b) => favorites.includes(b.id))
-  }, [favorites])
+    return businesses.filter((b) => favorites.includes(b.id))
+  }, [businesses, favorites])
+
 
   // Métricas del usuario
   const userStats = useMemo(() => {

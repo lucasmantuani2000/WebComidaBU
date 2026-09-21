@@ -18,10 +18,13 @@ import {
   Croissant,
   CookingPot,
 } from 'lucide-react'
-import { CATEGORIES, MOCK_BUSINESSES } from '../data'
+import { CATEGORIES } from '../data'
 import { BusinessCard } from '../components/common'
+import { useBusinesses } from '../context'
 import { normalizeText } from '../utils'
 import { BusinessDetail } from './BusinessDetail'
+
+
 
 const CATEGORY_ICONS: Record<string, typeof UtensilsCrossed> = {
   Beef,
@@ -46,6 +49,7 @@ export function Home({
   selectedBusinessId: propSelectedId,
   onSelectBusiness: propOnSelect,
 }: HomeProps = {}) {
+  const { businesses } = useBusinesses()
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('todos')
@@ -58,17 +62,18 @@ export function Home({
   const selectedBusiness = useMemo(() => {
     if (!selectedBusinessId) return null
     return (
-      MOCK_BUSINESSES.find(
+      businesses.find(
         (b) => b.id === selectedBusinessId || b.slug === selectedBusinessId
       ) || null
     )
-  }, [selectedBusinessId])
+  }, [selectedBusinessId, businesses])
 
   // Filtrado reactivo en tiempo real con normalización de tildes y mayúsculas
   const filteredBusinesses = useMemo(() => {
     const normQuery = normalizeText(searchQuery)
 
-    return MOCK_BUSINESSES.filter((business) => {
+    return businesses.filter((business) => {
+
       // 1. Filtro por categoría seleccionada
       if (selectedCategory !== 'todos') {
         const matchesCategory = business.categories.includes(selectedCategory)
@@ -98,7 +103,8 @@ export function Home({
 
       return false
     })
-  }, [searchQuery, selectedCategory])
+  }, [searchQuery, selectedCategory, businesses])
+
 
   const handleResetFilters = () => {
     setSearchQuery('')
@@ -208,7 +214,7 @@ export function Home({
                   : 'bg-slate-100 text-slate-500'
               }`}
             >
-              {MOCK_BUSINESSES.length}
+              {businesses.length}
             </span>
           </button>
 
@@ -216,9 +222,10 @@ export function Home({
           {CATEGORIES.map((category) => {
             const Icon = CATEGORY_ICONS[category.icon] || UtensilsCrossed
             const isSelected = selectedCategory === category.slug
-            const countForCat = MOCK_BUSINESSES.filter((b) =>
+            const countForCat = businesses.filter((b) =>
               b.categories.includes(category.slug)
             ).length
+
 
             return (
               <button

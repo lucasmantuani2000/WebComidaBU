@@ -14,8 +14,11 @@ import {
   ArrowRight,
   Layers,
 } from 'lucide-react'
-import { CATEGORIES, MOCK_BUSINESSES } from '../data'
+import { CATEGORIES } from '../data'
+import { useBusinesses } from '../context'
 import { BusinessDetail } from './BusinessDetail'
+
+
 
 // Coordenadas del centro urbano de Bella Unión, Artigas, Uruguay
 const BELLA_UNION_CENTER: [number, number] = [-30.276, -57.5997]
@@ -30,6 +33,7 @@ export function MapView({
   selectedBusinessId: propSelectedId,
   onSelectBusiness: propOnSelect,
 }: MapViewProps = {}) {
+  const { businesses } = useBusinesses()
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>('todos')
   const [onlyVerified, setOnlyVerified] = useState(false)
@@ -41,22 +45,23 @@ export function MapView({
   const selectedBusiness = useMemo(() => {
     if (!selectedBusinessId) return null
     return (
-      MOCK_BUSINESSES.find(
+      businesses.find(
         (b) => b.id === selectedBusinessId || b.slug === selectedBusinessId
       ) || null
     )
-  }, [selectedBusinessId])
+  }, [selectedBusinessId, businesses])
 
   // Filtrar solo negocios que tienen coordenadas válidas dentro del mapa
   const businessesWithCoords = useMemo(() => {
-    return MOCK_BUSINESSES.filter(
+    return businesses.filter(
       (b) =>
         b.location.latitude !== null &&
         b.location.latitude !== undefined &&
         b.location.longitude !== null &&
         b.location.longitude !== undefined
     )
-  }, [])
+  }, [businesses])
+
 
   // Filtrado reactivo según la categoría y verificación seleccionadas
   const visibleBusinesses = useMemo(() => {
