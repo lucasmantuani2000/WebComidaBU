@@ -5,10 +5,12 @@ export interface AuthContextType {
   currentUser: User | null
   isAuthenticated: boolean
   isLoading: boolean
-  login: (email: string, name?: string) => Promise<void>
-  register: (name: string, email: string) => Promise<void>
-  logout: () => void
+  isSupabaseConfigured: boolean
+  login: (email: string, password?: string) => Promise<void>
+  register: (name: string, email: string, password?: string) => Promise<void>
+  logout: () => Promise<void>
   loginAsDemoUser: () => Promise<void>
+  loginWithGoogle: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)

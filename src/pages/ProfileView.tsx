@@ -380,7 +380,17 @@ export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBus
                   <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
                   <span>Vecino Verificado</span>
                 </span>
+                {currentUser.id === 'usr-martin-silva' ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                    <span>Modo Demo</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    <span>Cuenta Supabase</span>
+                  </span>
+                )}
               </div>
+
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-slate-500">
                 <span className="flex items-center gap-1.5">
@@ -423,14 +433,15 @@ export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBus
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  logout()
+                onClick={async () => {
+                  await logout()
                   setShowLogoutConfirm(false)
                 }}
                 className="px-3.5 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-bold hover:bg-rose-700 cursor-pointer transition shadow-xs"
               >
                 Sí, cerrar sesión
               </button>
+
             </div>
           </div>
         )}
