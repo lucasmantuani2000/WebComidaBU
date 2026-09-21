@@ -2,6 +2,7 @@ export interface Review {
   id: string
   businessId: string
   businessName: string
+  userId?: string
   userName: string
   userAvatar?: string
   /**

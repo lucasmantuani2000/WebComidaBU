@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react'
-import type { Review } from '../types'
 import {
   MessageSquare,
   Star,
@@ -12,8 +11,9 @@ import {
   PenSquare,
   Sparkles,
 } from 'lucide-react'
-import { MOCK_REVIEWS, MOCK_BUSINESSES } from '../data'
-import { ReviewCard } from '../components/common'
+import { MOCK_BUSINESSES } from '../data'
+import { ReviewCard, AuthModal } from '../components/common'
+import { useAuth, useReviews } from '../context'
 import { normalizeText } from '../utils'
 import { BusinessDetail } from './BusinessDetail'
 
@@ -26,11 +26,14 @@ export function ReviewsView({
   selectedBusinessId: propSelectedId,
   onSelectBusiness: propOnSelect,
 }: ReviewsViewProps = {}) {
-  // Estado de lista de opiniones en memoria
-  const [reviews, setReviews] = useState<Review[]>(MOCK_REVIEWS)
+  const { currentUser, isAuthenticated } = useAuth()
+  const { reviews, addReview } = useReviews()
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [starFilter, setStarFilter] = useState<number | 'all'>('all')
+
+  // Estado del Modal de Autenticación
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
 
   // Estado del Modal de Nueva Reseña
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -96,28 +99,36 @@ export function ReviewsView({
     setStarFilter('all')
   }
 
+  const handleOpenReviewModal = () => {
+    if (isAuthenticated) {
+      setIsModalOpen(true)
+      if (currentUser?.name) {
+        setFormUserName(currentUser.name)
+      }
+    } else {
+      setIsAuthModalOpen(true)
+    }
+  }
+
   // Manejo del envío del formulario de nueva reseña
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formProduct.trim() || !formUserName.trim() || !formComment.trim()) {
+    const authorName = currentUser?.name || formUserName.trim()
+    if (!formProduct.trim() || !authorName || !formComment.trim()) {
       return
     }
 
     const business = MOCK_BUSINESSES.find((b) => b.id === formBusinessId)
-    const newReview: Review = {
-      id: `rev-${Date.now()}`,
+    addReview({
       businessId: formBusinessId,
       businessName: business?.name || 'Local de Bella Unión',
-      userName: formUserName.trim(),
+      userId: currentUser?.id,
+      userName: authorName,
+      userAvatar: currentUser?.avatar,
       productConsumed: formProduct.trim(),
       rating: formRating,
       comment: formComment.trim(),
-      date: 'Recién',
-      verifiedVisit: true,
-    }
-
-    // Agregar al inicio del feed en memoria
-    setReviews([newReview, ...reviews])
+    })
 
     // Limpiar formulario y cerrar modal
     setFormProduct('')
@@ -177,7 +188,7 @@ export function ReviewsView({
         {/* Botón Escribir Reseña */}
         <button
           type="button"
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenReviewModal}
           className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-white hover:bg-amber-50 text-amber-800 font-bold text-sm shadow-md transition active:scale-95 cursor-pointer shrink-0 self-start sm:self-auto"
         >
           <PenSquare className="w-4 h-4 text-amber-600" />
@@ -428,21 +439,45 @@ export function ReviewsView({
                 </div>
               </div>
 
-              {/* Nombre de Usuario */}
-              <div className="space-y-1">
-                <label htmlFor="user-input" className="font-bold text-slate-700 block">
-                  Tu nombre y apellido:
-                </label>
-                <input
-                  id="user-input"
-                  type="text"
-                  value={formUserName}
-                  onChange={(e) => setFormUserName(e.target.value)}
-                  placeholder="Ej: Carlos Rossi"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400"
-                  required
-                />
-              </div>
+              {/* Nombre de Usuario o Identidad Autenticada */}
+              {currentUser ? (
+                <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                      {currentUser.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase()}
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-amber-800 font-semibold uppercase tracking-wider block">
+                        Publicando como
+                      </span>
+                      <span className="font-bold text-slate-900 text-xs">{currentUser.name}</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    Vecino Identificado
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <label htmlFor="user-input" className="font-bold text-slate-700 block">
+                    Tu nombre y apellido:
+                  </label>
+                  <input
+                    id="user-input"
+                    type="text"
+                    value={formUserName}
+                    onChange={(e) => setFormUserName(e.target.value)}
+                    placeholder="Ej: Carlos Rossi"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400"
+                    required
+                  />
+                </div>
+              )}
 
               {/* Comentario / Opinión */}
               <div className="space-y-1">
@@ -481,6 +516,17 @@ export function ReviewsView({
           </div>
         </div>
       )}
+
+      {/* Modal de Autenticación Rápida para Espectadores */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => {
+          setIsModalOpen(true)
+        }}
+        title="Iniciar Sesión para Opinar"
+        subtitle="Iniciá sesión o registrate para compartir tu experiencia y calificar platos en Bella Unión."
+      />
     </div>
   )
 }

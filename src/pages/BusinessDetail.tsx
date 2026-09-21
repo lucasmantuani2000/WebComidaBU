@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import type { Business, Review } from '../types'
+import type { Business } from '../types'
 import {
   ArrowLeft,
   MessageCircle,
@@ -23,8 +23,8 @@ import {
   Plus,
   X,
 } from 'lucide-react'
-import { MOCK_REVIEWS } from '../data'
-import { ReviewCard } from '../components/common'
+import { ReviewCard, AuthModal } from '../components/common'
+import { useAuth, useReviews } from '../context'
 
 export interface BusinessDetailProps {
   business: Business | null | undefined
@@ -32,9 +32,13 @@ export interface BusinessDetailProps {
 }
 
 export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
+  const { currentUser, isAuthenticated } = useAuth()
+  const { reviews, addReview } = useReviews()
   const [imgError, setImgError] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [reviewsList, setReviewsList] = useState<Review[]>(MOCK_REVIEWS)
+
+  // Estado del modal de autenticación si es espectador
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
 
   // Estado del modal de nueva reseña desde el detalle
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false)
@@ -48,8 +52,8 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
   // Reseñas asociadas a este negocio específico
   const businessReviews = useMemo(() => {
     if (!business) return []
-    return reviewsList.filter((r) => r.businessId === business.id)
-  }, [reviewsList, business])
+    return reviews.filter((r) => r.businessId === business.id)
+  }, [reviews, business])
 
   // Puntuación media calculada en base a las opiniones reales
   const computedRating = useMemo(() => {
@@ -114,24 +118,34 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
     }
   }
 
+  const handleOpenReviewModal = () => {
+    if (isAuthenticated) {
+      setIsReviewModalOpen(true)
+      if (currentUser?.name) {
+        setFormUserName(currentUser.name)
+      }
+    } else {
+      setIsAuthModalOpen(true)
+    }
+  }
+
   // Enviar reseña directamente desde la ficha
   const handleSubmitDetailReview = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formProduct.trim() || !formUserName.trim() || !formComment.trim()) return
+    const authorName = currentUser?.name || formUserName.trim()
+    if (!formProduct.trim() || !authorName || !formComment.trim()) return
 
-    const newRev: Review = {
-      id: `rev-${Date.now()}`,
+    addReview({
       businessId: business.id,
       businessName: business.name,
-      userName: formUserName.trim(),
+      userId: currentUser?.id,
+      userName: authorName,
+      userAvatar: currentUser?.avatar,
       productConsumed: formProduct.trim(),
       rating: formRating,
       comment: formComment.trim(),
-      date: 'Recién',
-      verifiedVisit: true,
-    }
+    })
 
-    setReviewsList([newRev, ...reviewsList])
     setFormProduct('')
     setFormUserName('')
     setFormComment('')
@@ -461,7 +475,7 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
               </div>
               <button
                 type="button"
-                onClick={() => setIsReviewModalOpen(true)}
+                onClick={handleOpenReviewModal}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-xs transition cursor-pointer"
               >
                 <PenSquare className="w-3.5 h-3.5 text-amber-600" />
@@ -516,7 +530,7 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setIsReviewModalOpen(true)}
+                    onClick={handleOpenReviewModal}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs"
                   >
                     <Plus className="w-3.5 h-3.5" />
@@ -650,20 +664,45 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label htmlFor="detail-user-input" className="font-bold text-slate-700 block">
-                  Tu nombre:
-                </label>
-                <input
-                  id="detail-user-input"
-                  type="text"
-                  value={formUserName}
-                  onChange={(e) => setFormUserName(e.target.value)}
-                  placeholder="Ej: Laura Martínez"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400"
-                  required
-                />
-              </div>
+              {/* Identidad del Usuario Autenticado o Campo de Nombre */}
+              {currentUser ? (
+                <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                      {currentUser.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase()}
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-amber-800 font-semibold uppercase tracking-wider block">
+                        Opinando como
+                      </span>
+                      <span className="font-bold text-slate-900 text-xs">{currentUser.name}</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    Vecino Identificado
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <label htmlFor="detail-user-input" className="font-bold text-slate-700 block">
+                    Tu nombre:
+                  </label>
+                  <input
+                    id="detail-user-input"
+                    type="text"
+                    value={formUserName}
+                    onChange={(e) => setFormUserName(e.target.value)}
+                    placeholder="Ej: Laura Martínez"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400"
+                    required
+                  />
+                </div>
+              )}
 
               <div className="space-y-1">
                 <label htmlFor="detail-comment-input" className="font-bold text-slate-700 block">
@@ -700,6 +739,17 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
           </div>
         </div>
       )}
+
+      {/* Modal de Autenticación si intenta opinar como espectador */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={() => {
+          setIsReviewModalOpen(true)
+        }}
+        title="Iniciar Sesión para Opinar"
+        subtitle={`Iniciá sesión o registrate para compartir tu experiencia sobre ${business.name}.`}
+      />
     </div>
   )
 }

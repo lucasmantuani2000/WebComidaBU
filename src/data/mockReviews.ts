@@ -5,6 +5,7 @@ export const MOCK_REVIEWS: Review[] = [
     id: 'rev-1',
     businessId: 'avenida-resto',
     businessName: 'Avenida Restó',
+    userId: 'usr-martin-silva',
     userName: 'Martín Silva',
     productConsumed: 'Milanesa en dos panes completa con papas fritas',
     rating: 5,

@@ -1,5 +1,6 @@
 import type { TabType } from '../../types'
 import { UtensilsCrossed, MapPin, User, Compass, Home, Map, MessageSquare } from 'lucide-react'
+import { useAuth } from '../../context'
 
 interface HeaderProps {
   activeTab: TabType
@@ -14,6 +15,8 @@ const DESKTOP_NAV_ITEMS: { id: TabType; label: string; icon: typeof Home }[] = [
 ]
 
 export function Header({ activeTab, onTabChange }: HeaderProps) {
+  const { currentUser, isAuthenticated } = useAuth()
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -75,15 +78,39 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
             <button
               type="button"
               onClick={() => onTabChange('perfil')}
-              className={`flex items-center gap-2 p-2 sm:px-3.5 sm:py-2 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
                 activeTab === 'perfil'
                   ? 'bg-amber-500 text-white shadow-sm shadow-amber-500/25'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80 hover:text-slate-900'
               }`}
               aria-label="Acceder al perfil"
             >
-              <User className="w-4 h-4" />
-              <span className="hidden sm:inline text-xs font-semibold">Mi Cuenta</span>
+              {isAuthenticated && currentUser ? (
+                <>
+                  <div
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shadow-xs shrink-0 ${
+                      activeTab === 'perfil'
+                        ? 'bg-white/20 text-white'
+                        : 'bg-gradient-to-br from-amber-500 to-orange-600 text-white'
+                    }`}
+                  >
+                    {currentUser.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase()}
+                  </div>
+                  <span className="hidden sm:inline text-xs font-bold max-w-[100px] truncate">
+                    {currentUser.name.split(' ')[0]}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <User className="w-4 h-4" />
+                  <span className="hidden sm:inline text-xs font-semibold">Mi Cuenta</span>
+                </>
+              )}
             </button>
           </div>
         </div>

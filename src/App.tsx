@@ -1,52 +1,34 @@
 import { useState } from 'react'
 import type { TabType } from './types'
 import { Layout } from './components/layout'
-import { Home, Explore, MapView, ReviewsView } from './pages'
-import { User } from 'lucide-react'
+import { Home, Explore, MapView, ReviewsView, ProfileView } from './pages'
+import { AuthProvider, ReviewsProvider } from './context'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('inicio')
 
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Pestaña Inicio: Experiencia Home de Descubrimiento */}
-        {activeTab === 'inicio' && <Home />}
+    <AuthProvider>
+      <ReviewsProvider>
+        <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+            {/* Pestaña Inicio: Experiencia Home de Descubrimiento */}
+            {activeTab === 'inicio' && <Home />}
 
-        {/* Pestaña Explorar: Directorio Avanzado con Filtros y Ordenamiento */}
-        {activeTab === 'explorar' && <Explore />}
+            {/* Pestaña Explorar: Directorio Avanzado con Filtros y Ordenamiento */}
+            {activeTab === 'explorar' && <Explore />}
 
-        {/* Pestaña Mapa: Visualización Geográfica Interactiva en Bella Unión */}
-        {activeTab === 'mapa' && <MapView />}
+            {/* Pestaña Mapa: Visualización Geográfica Interactiva en Bella Unión */}
+            {activeTab === 'mapa' && <MapView />}
 
-        {/* Pestaña Reseñas: Feed Comunitario con Filtro por Producto */}
-        {activeTab === 'resenas' && <ReviewsView />}
+            {/* Pestaña Reseñas: Feed Comunitario con Filtro por Producto */}
+            {activeTab === 'resenas' && <ReviewsView />}
 
-        {/* Pestaña Perfil */}
-        {activeTab === 'perfil' && (
-          <section className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/80 shadow-xs text-center space-y-4 max-w-2xl mx-auto my-8">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mx-auto ring-8 ring-emerald-500/5">
-              <User className="w-8 h-8" />
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">Sección en Desarrollo</span>
-              <h2 className="text-2xl font-bold text-slate-900">Mi Cuenta & Registro</h2>
-              <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-                Próximamente: favoritos guardados, preferencias y formulario para sumar o verificar un nuevo comercio gastronómico.
-              </p>
-            </div>
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => setActiveTab('inicio')}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition cursor-pointer"
-              >
-                Volver a Inicio
-              </button>
-            </div>
-          </section>
-        )}
-      </div>
-    </Layout>
+            {/* Pestaña Perfil: Modo Espectador vs Usuario Autenticado y Mis Reseñas */}
+            {activeTab === 'perfil' && <ProfileView onNavigateToTab={setActiveTab} />}
+          </div>
+        </Layout>
+      </ReviewsProvider>
+    </AuthProvider>
   )
 }
