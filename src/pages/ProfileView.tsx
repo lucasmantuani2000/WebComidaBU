@@ -11,13 +11,14 @@ import {
   Sparkles,
   ShieldCheck,
   Heart,
+  HeartOff,
   UtensilsCrossed,
   ArrowRight,
   LogIn,
   UserPlus,
 } from 'lucide-react'
-import { useAuth, useReviews } from '../context'
-import { ReviewCard, AuthModal } from '../components/common'
+import { useAuth, useReviews, useFavorites } from '../context'
+import { ReviewCard, BusinessCard, AuthModal } from '../components/common'
 import { normalizeText } from '../utils'
 import { BusinessDetail } from './BusinessDetail'
 import { MOCK_BUSINESSES } from '../data'
@@ -30,6 +31,10 @@ export interface ProfileViewProps {
 export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBusiness }: ProfileViewProps) {
   const { currentUser, isAuthenticated, logout, loginAsDemoUser } = useAuth()
   const { reviews } = useReviews()
+  const { favorites, favoritesCount } = useFavorites()
+
+  // Pestaña activa dentro del perfil: 'resenas' | 'favoritos'
+  const [activeProfileTab, setActiveProfileTab] = useState<'resenas' | 'favoritos'>('resenas')
 
   // Estado para el modal de autenticación si se invoca desde el perfil de invitado
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
@@ -69,6 +74,11 @@ export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBus
     )
   }, [reviews, currentUser])
 
+  // Comercios marcados como favoritos
+  const favoriteBusinesses = useMemo(() => {
+    return MOCK_BUSINESSES.filter((b) => favorites.includes(b.id))
+  }, [favorites])
+
   // Métricas del usuario
   const userStats = useMemo(() => {
     const total = userReviews.length
@@ -91,7 +101,7 @@ export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBus
       .toUpperCase()
   }
 
-  // Si hay un negocio seleccionado desde una reseña propia, mostramos la ficha de detalle
+  // Si hay un negocio seleccionado desde una reseña o tarjeta de favoritos, mostramos la ficha de detalle
   if (selectedBusinessId && selectedBusiness) {
     return (
       <BusinessDetail
@@ -104,10 +114,126 @@ export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBus
     )
   }
 
+  // Renderizado común del selector de pestañas (Mis Reseñas / Lugares Guardados)
+  const renderTabSwitcher = () => (
+    <div className="flex items-center gap-2 border-b border-slate-200/80 pb-px">
+      <button
+        type="button"
+        onClick={() => setActiveProfileTab('resenas')}
+        className={`flex items-center gap-2 py-3 px-4 sm:px-5 font-bold text-xs sm:text-sm border-b-2 transition cursor-pointer ${
+          activeProfileTab === 'resenas'
+            ? 'border-amber-600 text-amber-600'
+            : 'border-transparent text-slate-500 hover:text-slate-800'
+        }`}
+      >
+        <MessageSquare className="w-4 h-4" />
+        <span>Mis Reseñas</span>
+        <span
+          className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+            activeProfileTab === 'resenas'
+              ? 'bg-amber-100 text-amber-800'
+              : 'bg-slate-100 text-slate-600'
+          }`}
+        >
+          {userReviews.length}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setActiveProfileTab('favoritos')}
+        className={`flex items-center gap-2 py-3 px-4 sm:px-5 font-bold text-xs sm:text-sm border-b-2 transition cursor-pointer ${
+          activeProfileTab === 'favoritos'
+            ? 'border-rose-500 text-rose-600'
+            : 'border-transparent text-slate-500 hover:text-slate-800'
+        }`}
+      >
+        <Heart
+          className={`w-4 h-4 ${
+            activeProfileTab === 'favoritos' ? 'fill-rose-500 text-rose-500' : ''
+          }`}
+        />
+        <span>Lugares Guardados</span>
+        <span
+          className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+            activeProfileTab === 'favoritos'
+              ? 'bg-rose-100 text-rose-800'
+              : 'bg-slate-100 text-slate-600'
+          }`}
+        >
+          {favoritesCount}
+        </span>
+      </button>
+    </div>
+  )
+
+  // Renderizado común de la sección de Favoritos
+  const renderFavoritesSection = () => (
+    <section className="space-y-4 animate-in fade-in duration-200">
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
+          <h2 className="text-base sm:text-lg font-bold text-slate-900">
+            Lugares Guardados
+          </h2>
+        </div>
+        <span className="text-xs text-slate-400 font-medium">
+          {favoritesCount} {favoritesCount === 1 ? 'comercio guardado' : 'comercios guardados'}
+        </span>
+      </div>
+
+      {favoriteBusinesses.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          {favoriteBusinesses.map((business) => (
+            <BusinessCard
+              key={business.id}
+              business={business}
+              onSelect={(b) => handleSelectBusiness(b.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        /* Empty State elegante de Favoritos */
+        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/80 text-center space-y-4 shadow-xs max-w-lg mx-auto">
+          <div className="w-16 h-16 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto ring-8 ring-rose-500/10">
+            <HeartOff className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-1.5 max-w-sm mx-auto">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900">
+              Aún no guardaste lugares favoritos
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+              Guardá tus carritos, pizzerías y restós preferidos tocando el corazón en las tarjetas o en la ficha de detalle.
+            </p>
+          </div>
+
+          <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={() => onNavigateToTab?.('explorar')}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs sm:text-sm transition cursor-pointer shadow-xs"
+            >
+              <Store className="w-4 h-4" />
+              <span>Explorar comercios</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onNavigateToTab?.('inicio')}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition cursor-pointer"
+            >
+              <span>Ir al Inicio</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+
   // --- VISTA 1: MODO ESPECTADOR (Invitado no autenticado) ---
   if (!isAuthenticated || !currentUser) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
+      <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-200">
         {/* Banner Hero para Invitados */}
         <div className="bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 rounded-3xl p-6 sm:p-10 text-white shadow-xl shadow-amber-500/15 text-center space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md text-white flex items-center justify-center mx-auto shadow-inner ring-8 ring-white/10">
@@ -154,41 +280,8 @@ export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBus
           </div>
         </div>
 
-        {/* Tarjetas de Beneficios */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-              <UtensilsCrossed className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-sm text-slate-900">Opiná sobre platos</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Contá qué pediste, qué tal estuvo la porción y ayudá a otros vecinos a elegir qué comer.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-sm text-slate-900">Consumo Verificado</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Tus opiniones llevan la insignia de consumo local, aportando confianza y valor a la comunidad.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
-              <Heart className="w-5 h-5" />
-            </div>
-            <h3 className="font-bold text-sm text-slate-900">Apoyo a Locales</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Dale visibilidad a carritos, pizzerías, restós y rotiserías de los diferentes barrios de Bella Unión.
-            </p>
-          </div>
-        </div>
-
         {/* Acceso rápido de prueba */}
-        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 text-center space-y-3">
+        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-center space-y-2">
           <div className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600">
             <Sparkles className="w-4 h-4 text-amber-500" />
             <span>¿Querés probar las funciones de usuario ahora mismo?</span>
@@ -197,13 +290,56 @@ export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBus
             <button
               type="button"
               onClick={loginAsDemoUser}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
             >
               <span>Ingresar como usuario de prueba (Martín Silva)</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
+
+        {/* Control de pestañas interno */}
+        {renderTabSwitcher()}
+
+        {/* Contenido según la pestaña activa */}
+        {activeProfileTab === 'favoritos' ? (
+          renderFavoritesSection()
+        ) : (
+          /* Tarjetas de Beneficios en pestaña Reseñas para invitados */
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-2">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                  <UtensilsCrossed className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-sm text-slate-900">Opiná sobre platos</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Contá qué pediste, qué tal estuvo la porción y ayudá a otros vecinos a elegir qué comer.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-2">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-sm text-slate-900">Consumo Verificado</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Tus opiniones llevan la insignia de consumo local, aportando confianza y valor a la comunidad.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-2">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 flex items-center justify-center">
+                  <Heart className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-sm text-slate-900">Apoyo a Locales</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Dale visibilidad a carritos, pizzerías, restós y rotiserías de los diferentes barrios de Bella Unión.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal de Autenticación */}
         <AuthModal
@@ -310,6 +446,16 @@ export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBus
 
           <div className="bg-slate-50 rounded-2xl p-4 text-center border border-slate-200/60">
             <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              Guardados
+            </div>
+            <div className="text-2xl font-black text-rose-600 mt-1 flex items-center justify-center gap-1">
+              <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />
+              <span>{favoritesCount}</span>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 rounded-2xl p-4 text-center border border-slate-200/60">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
               Promedio dado
             </div>
             <div className="text-2xl font-black text-amber-600 mt-1 flex items-center justify-center gap-1">
@@ -317,79 +463,80 @@ export function ProfileView({ onNavigateToTab, onSelectBusiness: propOnSelectBus
               <span>{userStats.average}</span>
             </div>
           </div>
-
-          <div className="bg-slate-50 rounded-2xl p-4 text-center border border-slate-200/60">
-            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-              Locales
-            </div>
-            <div className="text-2xl font-black text-slate-900 mt-1">{userStats.uniquePlaces}</div>
-          </div>
         </div>
       </div>
 
-      {/* Sección "Mis Reseñas" */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-amber-600" />
-            <h2 className="text-base sm:text-lg font-bold text-slate-900">
-              Mis Opiniones y Calificaciones
-            </h2>
-          </div>
-          <span className="text-xs text-slate-400 font-medium">
-            {userReviews.length} {userReviews.length === 1 ? 'publicación' : 'publicaciones'}
-          </span>
-        </div>
+      {/* Control de Pestañas: Mis Reseñas / Lugares Guardados */}
+      {renderTabSwitcher()}
 
-        {userReviews.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {userReviews.map((rev) => (
-              <ReviewCard
-                key={rev.id}
-                review={rev}
-                showBusinessName={true}
-                onSelectBusiness={handleSelectBusiness}
-              />
-            ))}
-          </div>
-        ) : (
-          /* Estado Vacío de Reseñas Propias */
-          <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/80 text-center space-y-4 shadow-xs">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto ring-6 ring-amber-500/5">
-              <UtensilsCrossed className="w-7 h-7" />
+      {/* Contenido según Pestaña seleccionada */}
+      {activeProfileTab === 'favoritos' ? (
+        renderFavoritesSection()
+      ) : (
+        /* Sección "Mis Reseñas" */
+        <section className="space-y-4 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-amber-600" />
+              <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                Mis Opiniones y Calificaciones
+              </h2>
             </div>
-
-            <div className="space-y-1 max-w-sm mx-auto">
-              <h3 className="text-base font-bold text-slate-900">
-                Aún no compartiste ninguna opinión
-              </h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                ¿Fuiste a comer o pediste delivery recientemente en Bella Unión? Contale a la comunidad qué plato probaste.
-              </p>
-            </div>
-
-            <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
-              <button
-                type="button"
-                onClick={() => onNavigateToTab?.('explorar')}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs"
-              >
-                <Store className="w-3.5 h-3.5" />
-                <span>Explorar locales</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onNavigateToTab?.('resenas')}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>Ver feed de opiniones</span>
-              </button>
-            </div>
+            <span className="text-xs text-slate-400 font-medium">
+              {userReviews.length} {userReviews.length === 1 ? 'publicación' : 'publicaciones'}
+            </span>
           </div>
-        )}
-      </section>
+
+          {userReviews.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {userReviews.map((rev) => (
+                <ReviewCard
+                  key={rev.id}
+                  review={rev}
+                  showBusinessName={true}
+                  onSelectBusiness={handleSelectBusiness}
+                />
+              ))}
+            </div>
+          ) : (
+            /* Estado Vacío de Reseñas Propias */
+            <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200/80 text-center space-y-4 shadow-xs">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center mx-auto ring-6 ring-amber-500/5">
+                <UtensilsCrossed className="w-7 h-7" />
+              </div>
+
+              <div className="space-y-1 max-w-sm mx-auto">
+                <h3 className="text-base font-bold text-slate-900">
+                  Aún no compartiste ninguna opinión
+                </h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  ¿Fuiste a comer o pediste delivery recientemente en Bella Unión? Contale a la comunidad qué plato probaste.
+                </p>
+              </div>
+
+              <div className="pt-2 flex items-center justify-center gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => onNavigateToTab?.('explorar')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs"
+                >
+                  <Store className="w-3.5 h-3.5" />
+                  <span>Explorar locales</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onNavigateToTab?.('resenas')}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Ver feed de opiniones</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
     </div>
   )
 }

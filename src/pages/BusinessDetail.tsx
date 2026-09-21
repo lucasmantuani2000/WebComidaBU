@@ -22,9 +22,10 @@ import {
   PenSquare,
   Plus,
   X,
+  Heart,
 } from 'lucide-react'
 import { ReviewCard, AuthModal } from '../components/common'
-import { useAuth, useReviews } from '../context'
+import { useAuth, useReviews, useFavorites } from '../context'
 
 export interface BusinessDetailProps {
   business: Business | null | undefined
@@ -34,7 +35,10 @@ export interface BusinessDetailProps {
 export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
   const { currentUser, isAuthenticated } = useAuth()
   const { reviews, addReview } = useReviews()
+  const { isFavorite, toggleFavorite } = useFavorites()
+  const isFav = business ? isFavorite(business.id) : false
   const [imgError, setImgError] = useState(false)
+
   const [copied, setCopied] = useState(false)
 
   // Estado del modal de autenticación si es espectador
@@ -169,7 +173,7 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
         </div>
       )}
 
-      {/* Barra de navegación superior con botón Volver */}
+      {/* Barra de navegación superior con botón Volver, Favorito y Compartir */}
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -180,25 +184,49 @@ export function BusinessDetail({ business, onBack }: BusinessDetailProps) {
           <span>Volver al listado</span>
         </button>
 
-        <button
-          type="button"
-          onClick={handleShare}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-slate-900 font-medium text-xs transition cursor-pointer shadow-xs"
-          title="Copiar enlace"
-        >
-          {copied ? (
-            <>
-              <Check className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="text-emerald-600 font-semibold">¡Enlace copiado!</span>
-            </>
-          ) : (
-            <>
-              <Share2 className="w-3.5 h-3.5 text-slate-400" />
-              <span>Compartir</span>
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Botón Favorito con microinteracción */}
+          <button
+            type="button"
+            onClick={() => business && toggleFavorite(business.id)}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border font-semibold text-xs transition-all duration-200 cursor-pointer shadow-xs active:scale-95 ${
+              isFav
+                ? 'bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100 hover:border-rose-300'
+                : 'bg-white border-slate-200/80 text-slate-600 hover:text-rose-600 hover:bg-rose-50/40 hover:border-rose-200'
+            }`}
+            aria-label={isFav ? `Quitar ${business.name} de favoritos` : `Guardar ${business.name} en favoritos`}
+            title={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+          >
+            <Heart
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                isFav ? 'fill-rose-500 text-rose-500 scale-110' : 'text-slate-400'
+              }`}
+            />
+            <span className="hidden xs:inline">{isFav ? 'Guardado' : 'Guardar'}</span>
+          </button>
+
+          {/* Botón Compartir */}
+          <button
+            type="button"
+            onClick={handleShare}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200/80 text-slate-600 hover:text-slate-900 font-medium text-xs transition cursor-pointer shadow-xs active:scale-95"
+            title="Copiar enlace"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-emerald-600 font-semibold">¡Copiado!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-3.5 h-3.5 text-slate-400" />
+                <span>Compartir</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
+
 
       {/* Hero Portada con Fotografía Principal */}
       <div className="relative rounded-3xl overflow-hidden bg-slate-900 shadow-lg border border-slate-200/80 h-64 sm:h-80 md:h-96">

@@ -12,7 +12,9 @@ import {
   UtensilsCrossed,
   MessageCircle,
   ChevronRight,
+  Heart,
 } from 'lucide-react'
+import { useFavorites } from '../../context'
 
 interface BusinessCardProps {
   business: Business
@@ -20,7 +22,10 @@ interface BusinessCardProps {
 }
 
 export function BusinessCard({ business, onSelect }: BusinessCardProps) {
+  const { isFavorite, toggleFavorite } = useFavorites()
+  const isFav = isFavorite(business.id)
   const [imgError, setImgError] = useState(false)
+
 
   // Normalización del número de WhatsApp uruguayo para enlace wa.me
   const getWhatsAppUrl = (rawNumber: string): string => {
@@ -89,14 +94,37 @@ export function BusinessCard({ business, onSelect }: BusinessCardProps) {
           )}
         </div>
 
-        {/* Rango de precio superior derecho */}
-        {business.priceRange && (
-          <div className="absolute top-3 right-3">
+        {/* Acciones y rango de precio superior derecho */}
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+          {business.priceRange && (
             <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-white/90 text-slate-800 backdrop-blur-md shadow-xs">
               {business.priceRange}
             </span>
-          </div>
-        )}
+          )}
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleFavorite(business.id)
+            }}
+            onKeyDown={(e) => e.stopPropagation()}
+            aria-label={isFav ? `Quitar ${business.name} de favoritos` : `Guardar ${business.name} en favoritos`}
+            title={isFav ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+            className={`p-2 rounded-full backdrop-blur-sm transition-all shadow-xs cursor-pointer active:scale-90 ${
+              isFav
+                ? 'bg-white text-rose-500 hover:bg-rose-50'
+                : 'bg-white/80 hover:bg-white text-slate-600 hover:text-rose-500'
+            }`}
+          >
+            <Heart
+              className={`w-3.5 h-3.5 transition-all duration-200 ${
+                isFav ? 'fill-rose-500 text-rose-500 scale-110' : ''
+              }`}
+            />
+          </button>
+        </div>
+
 
         {/* Modalidades de servicio sobre la imagen */}
         <div className="absolute bottom-2.5 left-3 right-3 flex items-center gap-1.5 flex-wrap">
